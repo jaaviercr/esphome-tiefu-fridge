@@ -85,9 +85,27 @@ When configured, `protocol_state` appears in Home Assistant under **Diagnostics*
 
 The component supplies contextual Material Design Icons by default (for example, `mdi:fridge` for the climate and `mdi:code-tags` for protocol state). Set `icon:` inside an entity's YAML block to override its default. Battery percentage uses Home Assistant's battery device-class icon.
 
-The climate entity supports `off` and `cool`, reports current temperature, and controls a target in the fridge's Celsius range from -22 to 10 regardless of the selected display unit. Home Assistant hides the target temperature while the climate is off; the fridge's stored setpoint is reported again when it is on. Compressor mode options are `eco` and `max`; battery protection options are `low`, `middle`, and `high`; temperature unit options are `celsius` and `fahrenheit`.
+The climate entity reports current temperature and supports these modes and settings:
 
-`battery_percentage` reproduces the original app's voltage-based estimate: raw voltage `<= 96` maps to 0%, `<= 103` to 20%, `<= 111` to 40%, `<= 117` to 60%, `<= 124` to 80%, and higher values to 100%. This is an estimate from voltage, not a direct battery state-of-charge reading.
+| Parameter | Supported values / range |
+| --- | --- |
+| Climate mode | `off`, `cool` |
+| Target temperature | -22°C to 10°C, regardless of the selected display unit |
+| Compressor mode | `eco`, `max` |
+| Battery protection | `low`, `middle`, `high` |
+| Temperature unit | `celsius`, `fahrenheit` |
+
+Home Assistant hides the target temperature while the climate is off; the fridge's stored setpoint is reported again when it is on.
+
+`battery_percentage` reproduces the original app's voltage-based estimate. The fridge protocol encodes voltage in tenths of a volt; the component converts it to volts. This is an estimate, not a direct battery state-of-charge reading. It starts at 0% for voltages `<= 9.6 V` and increases each time the voltage exceeds these thresholds:
+
+| Voltage threshold crossed | Estimated battery percentage |
+| --- | --- |
+| `> 9.6 V` | 20% |
+| `> 10.3 V` | 40% |
+| `> 11.1 V` | 60% |
+| `> 11.7 V` | 80% |
+| `> 12.4 V` | 100% |
 
 `fault_event` emits the event type `e1` through `e6` for Home Assistant automations when a live `/SEE` fault arrives. The optional `last_fault` text sensor retains the most recent decoded description for diagnostics. It only records faults received while this ESPHome node is connected; historical notices stored locally by the Android app cannot be retrieved from the fridge. No fridge faults are simulated by the component.
 
@@ -96,6 +114,12 @@ The climate entity supports `off` and `cool`, reports current temperature, and c
 The component updates reported values from complete status responses. Target-only climate changes are ignored while the fridge is off or its power state is unknown. Selecting `cool` while the fridge is off or its power state is unknown requests power-on; if the request also includes a target, the target is applied after the fridge reports that it is on. The battery protection, compressor mode, and temperature unit selectors ignore changes while the fridge is off or its power state is unknown. Selecting climate mode `off` powers it down and clears any pending target.
 
 When the BLE link closes, or three `update_interval`s pass without a valid state response after BLE connects, the component clears cached sensor and select states rather than leaving stale readings. Home Assistant reports those entities as `unavailable` over the native API. Over MQTT, the component clears state topics with `None` or empty payloads; these do not mark MQTT entities unavailable, so numeric entities appear as `unknown` (other entity types may show an empty or unknown state). The climate is reset to `off` with unknown temperatures.
+
+### Home Assistant
+
+![Camper Fridge in Home Assistant](images/camper-fridge-in-home-assistant.png)
+
+*Example Home Assistant dashboard showing the fridge climate controls, operating settings, input voltage, estimated battery level, and temperature history.*
 
 ## Author
 
@@ -108,3 +132,4 @@ Licensed under the [Apache License 2.0](LICENSE).
 ## Trademarks and disclaimer
 
 This is an independent community project and is not affiliated with, endorsed by, sponsored by, or supported by TieFu, Guangdong Minghua Auto Equipment Technology Co., Joytutus, Scinan, or the Smart Car Fridge app developer. Product, company, and app names are used only to identify the devices and protocol with which this component is intended to interoperate. The software is provided "as is", without warranty.
+Use and run this software, and any hardware configuration based on it, at your own risk. This component is not a safety device; verify its behavior and monitor connected equipment and power sources.
