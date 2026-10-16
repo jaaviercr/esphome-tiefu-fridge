@@ -1,0 +1,60 @@
+esphome:
+  name: tiefu-fridge-example
+  friendly_name: TieFu Fridge Example
+  min_version: 2026.2.4
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: github://jaaviercr/esphome-tiefu-fridge
+    components: [tiefu_fridge]
+
+logger:
+api:
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "TieFu Fridge Fallback"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 320ms
+    window: 160ms
+    active: true
+    continuous: true
+
+ble_client:
+  - mac_address: !secret fridge_mac_address
+    id: fridge_ble
+    auto_connect: true
+
+tiefu_fridge:
+  id: fridge
+  ble_client_id: fridge_ble
+  update_interval: 30s
+  voltage:
+    name: "Fridge Supply Voltage"
+  battery_percentage:
+    name: "Fridge Battery Percentage"
+  fault_event:
+    name: "Fridge Fault Event"
+  protocol_state:
+    name: "Fridge Protocol State"
+  climate:
+    name: "Fridge Climate"
+  compressor_mode_control:
+    name: "Fridge Compressor Mode Control"
+  battery_protection_control:
+    name: "Fridge Battery Protection Control"
+  temperature_unit_control:
+    name: "Fridge Temperature Unit"
